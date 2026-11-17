@@ -1,0 +1,10 @@
+# Nextflow files
+.nextflow/
+work/
+.nextflow.log*
+
+# macOS
+.DS_Store
+
+# Data files
+data/
