@@ -2,19 +2,48 @@
 A basic nextflow pipeline evaluating expression data
 
 ## Project background
-In an oncology clinic, a patient's tumor may be evaluated by transcriptome via RNA sequencing. A tumor's transcriptome provides insight to unique patterns of gene expression and disregulation, and may enable rationalizing non-standard targeted treatments. Characterizing the similarity of a patient's tumor transcriptome and experimental cell line transcriptome helps to assess the relevance of experimental findings to that patient's cancer.
+In an oncology clinic, a patient's tumor may be evaluated by transcriptome via RNA sequencing. A tumor's transcriptome provides insight to unique patterns of gene expression and disregulation, and may enable rationalizing non-standard targeted treatments. Characterizing the similarity of a patient's tumor transcriptome against experimental cell line transcriptomes may help to assess the relevance of experimental findings to that patient's cancer.
 
 Cancer Dependency Map (DepMap) is a large collection of molecular and experimental data primarily focused on human cancer cell lines. Like all cancers in patients, each cancer cell line has it's own molecular characterists. Many of these cell lines have been used in experiments including drug sensitivity screens, CRISPR knockout, and RNAi knockdown studies. These experiments have the potential to inform personalized cancer treatment. However, if an experimental cell line differs substantially from a patient's tumor, the insights from experiments with that cell line may be less applicable to that patient's cancer.
 
-In this project, I do not have access to clinical tumor data. Instead, I will evaluate the transcriptomic similarity between cell lines using established computational methods that can serve as a foundation for future projects. Extending these methods to clinical tumor samples would require additional consideration, including accounting for differences in expression sequencing platforms, sample purity, and cellular heterogeneity.
+In this project, I do not have access to clinical tumor data. Instead, I will evaluate the transcriptomic similarity between cell lines in DepMap. These computational methods that can serve as a foundation for additional development.
 
-##	An explanation of the data used
 
-I have downloaded OmicsExpressionTPMLogp1HumanProteinCodingGenes.csv which describes the expression of 19,218 genes across 2,130 cell lines. This dataset has already been pre-processed by DepMap to remove duplicates and QC failures, rename genes, TPM normalization, and log transforms raw values.
+Caveats: a few major **simplifications** were taken in the pipeline:
+1. Processing clinical tumor samples requires accounting for differences in expression sequencing platforms, sample purity, and cellular heterogeneity.
+2. We only evaluate the accuracy of calculated outputs against known cell lineage. **However, calculating a sample's lineage similarity to cell lines doesn't mean a sample will respond the same to cell lines tested treatments.** 
+    - To test treatment-relevant similarity analysis, additional research is needed. One strategy could modify the existing similarity calculations by first filtering to pathway-relevant RNA expression. Also, datasets including noncoding RNA may be beneficial.
+
+##	Further explanation of DepMap data:
+OmicsExpressionTPMLogp1HumanProteinCodingGenes.csv describes the expression of 19,218 protein-coding genes across 2,130 cell lines. This dataset has already been pre-processed by DepMap to remove duplicates and QC failures, rename genes, perform TPM normalization, and log transforms raw values.
+
+As stated in the project background, this dataset is very suitable as many of these cell lines have been used in experiments including drug sensitivity screens, CRISPR knockout, and RNAi knockdown studies. The insights of these studies can be made relevant to a patient's tumor sample through similarity analysis.
 
 ##	Rationale for the pipeline’s design
-
+TODO: with each step and main tool explained and justified
 ##	A Directed Acyclic Graph (DAG) and summary of the pipeline stages
 ##	An overview of core (e.g. Nextflow, conda) and pipeline dependencies (e.g. FastQC, STAR, DESeq2)
 ##	Step-by-step instructions for running the pipeline, including the installation guide for core dependencies
+### Run-Only Mode
+The only dependencies for this project are nextflow and docker.
+1. Install nextflow via - 
+2. Install docker via - 
+nextflow run expression-similarity.nf
+
+### Developer Mode
+Rebuild docker with command 
+docker build --no-cache -t depmap-dev .
+Ensure depmap-dev docker build
+
+nextflow run main.nf -with-timeline timeline.html
+
 ##	An overview of the directory structure
+Root Directory (UBC-BIOF501-Nextflow) contains nextflow workflow definition and config, dockerfile, python requirements, and README.md
+/data/ contains pre-requisite data (larger files pulled from git)
+/python/ contains all python scripts 
+/
+
+# TODO!!
+- replace docker file with image pointing to git
+- check timeline
+- create DAG
