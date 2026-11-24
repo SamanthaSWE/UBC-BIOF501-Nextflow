@@ -5,17 +5,6 @@ from pathlib import Path
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-def clustermap_pearson_correlation(pearson_matrix: pd.DataFrame, output_dir: Path) -> None:
-    sns.clustermap(
-        pearson_matrix,
-        cmap="vlag",
-        vmin=-1,
-        vmax=1,
-        figsize=(12, 12)
-    )
-    plt.savefig(output_dir / f"pearson_clustermap_filtered_tissue_categories.png", dpi=150)
-    plt.close()
-
 def clustermap_spearman_correlation(spearman_matrix: pd.DataFrame, output_dir: Path)-> None:
     # visualize spearman
     sns.clustermap(
@@ -26,52 +15,6 @@ def clustermap_spearman_correlation(spearman_matrix: pd.DataFrame, output_dir: P
         figsize=(12, 12)
     )
     plt.savefig(output_dir / f"spearman_clustermap_filtered_tissue_categories.png", dpi=150)
-    plt.close()
-
-def scatter_pearson_vs_spearman_correlation(
-        pearson_matrix: pd.DataFrame, 
-        spearman_matrix: pd.DataFrame,
-        output_dir: Path)-> None:
-    # Use upper triangle to avoid duplicates and self-correlations
-    idx = np.triu_indices(len(pearson_matrix), k=1)
-
-    plt.scatter(
-        pearson_matrix.to_numpy()[idx],
-        spearman_matrix.to_numpy()[idx],
-        alpha=0.2,
-        s=5
-    )
-
-    plt.plot([-1, 1], [-1, 1], "--", color="gray")
-    plt.xlabel("Pearson correlation")
-    plt.ylabel("Spearman correlation")
-    plt.xlim(-1, 1)
-    plt.ylim(-1, 1)
-    plt.savefig(output_dir / f"pearson_vs_spearman_filtered_tissue_categories.png", dpi=150)
-    plt.close()
-
-def histogram_pearson_vs_spearman_correlation(
-        pearson_matrix: pd.DataFrame, 
-        spearman_matrix: pd.DataFrame,
-        output_dir: Path)-> None:
-    idx = np.triu_indices(len(pearson_matrix), k=1)
-
-    sns.histplot(
-    pearson_matrix.to_numpy()[idx],
-    label="Pearson",
-    stat="density",
-    element="step",
-    fill=False
-    )
-    sns.histplot(
-        spearman_matrix.to_numpy()[idx],
-        label="Spearman",
-        stat="density",
-        element="step",
-        fill=False
-    )
-    plt.legend()
-    plt.savefig(output_dir / f"pearson_vs_spearman_hist_filtered_tissue_categories.png", dpi=150)
     plt.close()
 
 def clustermap_pca_cosine_clustermap(pca_cosine_data: pd.DataFrame, output_dir: Path) -> None:
@@ -116,9 +59,7 @@ def scatter_pca(pca_data: pd.DataFrame, output_dir: Path) -> None:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pearson_results", required=True)
     parser.add_argument("--spearman_results", required=True)
-    parser.add_argument("--pca_results", required=True)
     parser.add_argument("--pca_cosine_results", required=True)
     parser.add_argument("--metadata", required=True)
     parser.add_argument("--figures", required=True)
@@ -128,30 +69,14 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # read all csv
-    pearson_csv = pd.read_csv(args.pearson_results, index_col="ModelID")
     spearman_csv = pd.read_csv(args.spearman_results, index_col="ModelID")
-    pca_results = pd.read_csv(args.pca_results, index_col="ModelID")
     pca_cosine_results = pd.read_csv(args.pca_cosine_results, index_col="ModelID")
     metadata = pd.read_csv(args.metadata)
 
-    # pearson and spearman visualizations
-    # clustermap_pearson_correlation(pearson_csv, output_dir)
 
     # clustermap_spearman_correlation(spearman_csv, output_dir)
-
-    # # pearson vs spearman visualizations
-    # scatter_pearson_vs_spearman_correlation(
-    #     pearson_matrix=pearson_csv,
-    #     spearman_matrix=spearman_csv,
-    #     output_dir=output_dir)
-    # scatter_pearson_vs_spearman_correlation(
-    #         pearson_matrix=pearson_csv,
-    #         spearman_matrix=spearman_csv,
-    #         output_dir=output_dir)
-
-    # pca visualizations
-    #scatter_pca(pca_results, output_dir)
-    #clustermap_pca_cosine_clustermap(pca_cosine_results, output_dir)
+    # scatter_pca(pca_results, output_dir)
+    # clustermap_pca_cosine_clustermap(pca_cosine_results, output_dir)
 
     # REAL WORK
     model_to_lineage: dict[str, str] = (
@@ -167,22 +92,26 @@ def main():
     n = counts.sum()
     random_baseline = (counts * (counts - 1)).sum() / (n * (n - 1))
 
-    results = {
-        "Pearson": pearson_csv,
+    similarity_methods = {
         "Spearman": spearman_csv,
         "PCA Cosine": pca_cosine_results,
     }
 
+    unknown_ids: set[str] = {
+        mid for mid, lineage in model_to_lineage.items()
+        if lineage == "Unknown"
+    }
     similarity_analysis = {}
+    records = []
 
-    for method, data in results.items():
+    for method, data in similarity_methods.items():
         # Keep only cell lines with known lineage, in matching row/column order
-        ids = [
-            model_id for model_id in data.index
-            if model_to_lineage.get(model_id, "Unknown") != "Unknown"
+        known_ids = [
+            mid for mid in data.index
+            if mid not in unknown_ids
         ]
-        scores = data.loc[ids, ids].to_numpy()
-        lineages = np.array([model_to_lineage[i] for i in ids])
+        scores = data.loc[known_ids, known_ids].to_numpy()
+        lineages = np.array([model_to_lineage[i] for i in known_ids])
 
         # Exclude self-comparisons
         np.fill_diagonal(
@@ -193,6 +122,20 @@ def main():
         neighbors = np.argpartition(scores, -10, axis=1)[:, -10:]
         agreement = (lineages[neighbors] == lineages[:, None]).mean()
         similarity_analysis[method] = agreement
+
+
+        for mid in unknown_ids:
+            if mid not in data.index:
+                continue
+
+            neighbors = data.loc[mid, known_ids].nlargest(10)
+
+            for neighbor in neighbors.index:
+                records.append({
+                    "ModelID": mid,
+                    "Method": method,
+                    "Lineage": model_to_lineage[neighbor]
+                })
 
     plt.figure(figsize=(8, 5))
     plt.bar(similarity_analysis.keys(), similarity_analysis.values())
@@ -211,6 +154,46 @@ def main():
     plt.savefig(output_dir / f"method_lineage_agreement.png", dpi=150)
     plt.close()
 
+    counts = (
+        pd.DataFrame(records)
+        .groupby(["ModelID", "Method", "Lineage"])
+        .size()
+        .unstack(fill_value=0)
+    )
+
+    colors = sns.color_palette("husl", n_colors=len(counts.columns))
+
+    ax = counts.plot(
+        kind="bar",
+        stacked=True,
+        figsize=(15, 7),
+        width=0.8,
+        color=colors
+    )
+
+    for lineage, container in zip(counts.columns, ax.containers):
+        short_lineage = lineage[:3]
+
+        labels = [
+            short_lineage if v >= 1 else ""
+            for v in container.datavalues
+        ]
+
+        ax.bar_label(
+            container,
+            labels=labels,
+            label_type="center",
+            fontsize=7,
+            rotation=90
+        )
+
+    plt.ylabel("Number of top-10 neighbors")
+    plt.xlabel("Unknown ModelID / Method")
+    plt.title("Predicted lineages of unknown cell lines")
+    plt.legend(title="Lineage", bbox_to_anchor=(1.02, 1), loc="upper left")
+    plt.tight_layout()
+    plt.savefig(output_dir / f"unknown_lineage_predictions.png", dpi=150)
+    plt.close()
 
 if __name__ == "__main__":
     main()

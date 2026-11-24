@@ -29,21 +29,19 @@ process PCAAnalysis {
     path python_script
 
     output:
-    tuple path("pca_results.csv"),
-        path("pca_cosine_results.csv"),
+    path("pca_cosine_results.csv"),
         emit: pca
 
     script:
     """
     python3 ${python_script} \
         --processed_expression_input ${processed_expression_csv_input} \
-        --pca_output pca_results.csv \
         --pca_cosine_output pca_cosine_results.csv 
     """
 }
 
-process PearsonAnalysis {
-    publishDir 'results/pearson', mode: 'copy'
+process SpearmanAnalysis {
+    publishDir 'results/spearman', mode: 'copy'
 
     input:
     path processed_expression_csv_input
@@ -51,16 +49,13 @@ process PearsonAnalysis {
     path python_script
 
     output:
-    tuple path("pearson_results.csv"),
-        path("spearman_results.csv"),
-        emit: correlations
+    path("spearman_results.csv"), emit: correlations
 
     script:
     """
     python3 ${python_script} \
         --processed_expression_input ${processed_expression_csv_input} \
         --human_protein_atlas_input ${human_protein_tsv_input} \
-        --pearson_output pearson_results.csv \
         --spearman_output spearman_results.csv 
     """
 }
@@ -69,10 +64,8 @@ process SimilarityEvaluation {
     publishDir 'results/final_similarity', mode: 'copy'
 
     input:
-    tuple path(pearson_results),
-        path(spearman_results)
-    tuple path(pca_results),
-        path(pca_cosine_results)
+    path(spearman_results)
+    path(pca_cosine_results)
     path metadata
     path python_script
 
@@ -82,9 +75,7 @@ process SimilarityEvaluation {
     script:
     """
     python3 ${python_script} \
-        --pearson_results ${pearson_results} \
         --spearman_results ${spearman_results} \
-        --pca_results ${pca_results} \
         --pca_cosine_results ${pca_cosine_results} \
         --metadata ${metadata} \
         --figures figures 
@@ -117,14 +108,14 @@ workflow {
         file("${projectDir}/python/pca_analysis.py")
     )
 
-    pearson_spearman = PearsonAnalysis(
+    spearman = SpearmanAnalysis(
         preprocessed_expression.data,
         human_protein_atlas,
-        file("${projectDir}/python/pearson_analysis.py")
+        file("${projectDir}/python/spearman_analysis.py")
     )
 
     SimilarityEvaluation(
-        pearson_spearman.correlations,
+        spearman.correlations,
         pca.pca,
         metadata,
         file("${projectDir}/python/similarity_evaluation.py")

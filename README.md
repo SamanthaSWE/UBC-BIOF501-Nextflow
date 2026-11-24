@@ -22,8 +22,54 @@ As stated in the project background, this dataset is very suitable as many of th
 ##	Rationale for the pipeline’s design
 TODO: with each step and main tool explained and justified
 ##	A Directed Acyclic Graph (DAG) and summary of the pipeline stages
+flowchart TB
+    subgraph " "
+    v0["channel.fromPath"]
+    v1["channel.fromPath"]
+    v2["channel.fromPath"]
+    v3["python_script"]
+    v6["python_script"]
+    v8["python_script"]
+    v10["python_script"]
+    end
+    v4(["PreprocessExpression"])
+    subgraph " "
+    v5[" "]
+    v12[" "]
+    end
+    v7(["PCAAnalysis"])
+    v9(["SpearmanAnalysis"])
+    v11(["SimilarityEvaluation"])
+    v0 --> v4
+    v1 --> v9
+    v2 --> v11
+    v3 --> v4
+    v4 --> v7
+    v4 --> v5
+    v4 --> v9
+    v6 --> v7
+    v7 --> v11
+    v8 --> v9
+    v9 --> v11
+    v10 --> v11
+    v11 --> v12
+
 ##	An overview of core (e.g. Nextflow, conda) and pipeline dependencies (e.g. FastQC, STAR, DESeq2)
+
 ##	Step-by-step instructions for running the pipeline, including the installation guide for core dependencies
+Install Prerequisites
+1. [[Java 17 or later](https://docs.oracle.com/en/java/javase/27/install/overview-jdk-installation.html)] — required to run Nextflow
+2. Nextflow — workflow execution engine
+3. [[Docker Desktop](https://www.docker.com/)] — runs the pipeline's containerized Python scripts
+
+Run Pipeline
+1. Clone the repository:
+    - git clone UBC-BIOF501-Nextflow
+    - cd UBC-BIOF501-Nextflow
+2. Start Docker Desktop
+3. Run nextflow .nf
+    - nextflow run expression-similarity.nf 
+
 ### Run-Only Mode
 The only dependencies for this project are nextflow and docker.
 1. Install nextflow via - 
@@ -35,10 +81,11 @@ Rebuild docker with command
 docker build --no-cache -t depmap-dev .
 Ensure depmap-dev docker build
 
-nextflow run main.nf -with-timeline timeline.html
+nextflow run expression-similarity.nf -with-timeline timeline.html
 
 ##	An overview of the directory structure
-Root Directory (UBC-BIOF501-Nextflow) contains nextflow workflow definition and config, dockerfile, python requirements, and README.md
+Root Directory (UBC-BIOF501-Nextflow) contains nextfl\
+ow workflow definition and config, dockerfile, python requirements, and README.md
 /data/ contains pre-requisite data (larger files pulled from git)
 /python/ contains all python scripts 
 /results/ store all intermediate and final results, including:

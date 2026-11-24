@@ -1,10 +1,7 @@
-
-
 import argparse
 import pandas as pd
 import re
 import constants
-from time import perf_counter
 
 def extract_gene_symbol(column_name: str) -> str:
     # Example: "TP53 (7157)" -> "TP53"
@@ -37,8 +34,7 @@ def process_hpa_data(args: argparse.Namespace) -> tuple[set[str] ,set[str]]:
 
     return gene_names, gene_synonyms
 
-def pearson_analysis(gene_expression_by_cell_lines: pd.DataFrame, args: argparse.Namespace) -> None:
-    start = perf_counter()
+def spearman_analysis(gene_expression_by_cell_lines: pd.DataFrame, args: argparse.Namespace) -> None:
     gene_names, gene_synonyms = process_hpa_data(args)
 
     exact_matches = []
@@ -55,40 +51,19 @@ def pearson_analysis(gene_expression_by_cell_lines: pd.DataFrame, args: argparse
         else:
             unmatched.append(column)
 
-    # Primary names vs synonyms
-    overlap = gene_names & gene_synonyms
-    print(f"Name-synonym overlaps: {len(overlap)}", flush=True)
-
-
     filtered_expression = gene_expression_by_cell_lines[
         exact_matches + synonym_matches
     ]
 
-    print(f"Filter: {perf_counter() - start:.2f}s", flush=True)
-    print(f"Exact matches: {len(exact_matches)}", flush=True)
-    print(f"Synonym matches: {len(synonym_matches)}", flush=True)
-    print(f"Excluded genes: {len(unmatched)}", flush=True)
-    print(f"Retained genes: {filtered_expression.shape[1]}", flush=True)
-    
-    start = perf_counter()
-    pearson_matrix = filtered_expression.T.corr(
-        method="pearson"
-    )
-    pearson_matrix.to_csv(args.pearson_output)
-    print(f"Pearson: {perf_counter() - start:.2f}s", flush=True)
-
-    start = perf_counter()
     spearman_matrix = filtered_expression.T.corr(
         method="spearman"
     )
     spearman_matrix.to_csv(args.spearman_output)
-    print(f"Spearman: {perf_counter() - start:.2f}s", flush=True)
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--processed_expression_input", required=True)
     parser.add_argument("--human_protein_atlas_input", required=True)
-    parser.add_argument("--pearson_output", required=True)
     parser.add_argument("--spearman_output", required=True)
     args = parser.parse_args()
 
@@ -96,7 +71,7 @@ def main():
     gene_expression_by_cell_lines = pd.read_csv(args.processed_expression_input, index_col="ModelID")
 
     #vp.plot_gene_variance(gene_expression_by_cell_lines, args)
-    pearson_analysis(gene_expression_by_cell_lines, args)
+    spearman_analysis(gene_expression_by_cell_lines, args)
 
 if __name__ == "__main__":
     main()
