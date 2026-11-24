@@ -41,7 +41,8 @@ nextflow run main.nf -with-timeline timeline.html
 Root Directory (UBC-BIOF501-Nextflow) contains nextflow workflow definition and config, dockerfile, python requirements, and README.md
 /data/ contains pre-requisite data (larger files pulled from git)
 /python/ contains all python scripts 
-/
+/results/ store all intermediate and final results, including:
+    - 
 
 # TODO!!
 - replace docker file with image pointing to git

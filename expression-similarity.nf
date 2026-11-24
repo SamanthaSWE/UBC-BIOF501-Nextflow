@@ -73,7 +73,7 @@ process SimilarityEvaluation {
         path(spearman_results)
     tuple path(pca_results),
         path(pca_cosine_results)
-    path protein_atlas
+    path metadata
     path python_script
 
     output:
@@ -86,7 +86,7 @@ process SimilarityEvaluation {
         --spearman_results ${spearman_results} \
         --pca_results ${pca_results} \
         --pca_cosine_results ${pca_cosine_results} \
-        --protein_atlas ${protein_atlas} \
+        --metadata ${metadata} \
         --figures figures 
     """
 }
@@ -94,6 +94,16 @@ process SimilarityEvaluation {
 workflow {
     expression = channel.fromPath(
         params.expression_file,
+        checkIfExists: true
+    )
+
+    human_protein_atlas = channel.fromPath(
+        params.human_protein_atlas_input_file,
+        checkIfExists: true
+    )
+
+    metadata = channel.fromPath(
+        params.metadata_file,
         checkIfExists: true
     )
 
@@ -107,11 +117,6 @@ workflow {
         file("${projectDir}/python/pca_analysis.py")
     )
 
-    human_protein_atlas = channel.fromPath(
-        params.human_protein_atlas_input_file,
-        checkIfExists: true
-    )
-
     pearson_spearman = PearsonAnalysis(
         preprocessed_expression.data,
         human_protein_atlas,
@@ -121,7 +126,7 @@ workflow {
     SimilarityEvaluation(
         pearson_spearman.correlations,
         pca.pca,
-        human_protein_atlas,
+        metadata,
         file("${projectDir}/python/similarity_evaluation.py")
     )
 

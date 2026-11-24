@@ -3,8 +3,15 @@
 work/
 .nextflow.log*
 
+# Results
+results/
+
 # macOS
 .DS_Store
 
 # Data files
 data/
+
+# python cache
+python/__pycache__/
+
