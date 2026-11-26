@@ -4,6 +4,7 @@ import numpy as np
 from pathlib import Path
 import seaborn as sns
 import matplotlib.pyplot as plt
+import umap
 
 def clustermap_spearman_correlation(spearman_matrix: pd.DataFrame, output_dir: Path)-> None:
     # visualize spearman
@@ -33,7 +34,7 @@ def clustermap_pca_cosine_clustermap(pca_cosine_data: pd.DataFrame, output_dir: 
     )
     plt.close() 
 
-def scatter_pca(pca_data: pd.DataFrame, output_dir: Path) -> None:
+def scatter_pca_basic(pca_data: pd.DataFrame, output_dir: Path) -> None:
     # Plot first two principal components
     plot_data = pca_data[["PC1", "PC2"]].copy()
 
@@ -56,6 +57,120 @@ def scatter_pca(pca_data: pd.DataFrame, output_dir: Path) -> None:
     plt.savefig(output_dir / f"pca1_pca2.png", dpi=150)
     plt.close()
 
+def umap_scatter_plot_spearman(spearman: pd.DataFrame, output_dir: Path, model_to_lineage: dict[str, str]) -> None:
+    
+    distance = np.clip(1 - spearman.to_numpy(), 0, 2)
+    np.fill_diagonal(distance, 0)
+
+    reducer = umap.UMAP(
+        n_components=2,
+        metric="precomputed",
+        n_neighbors=30,
+        min_dist=0.1,
+        random_state=42
+    )
+    embedding = reducer.fit_transform(distance)
+    lineages = [
+        model_to_lineage.get(mid, "Unknown")
+        for mid in spearman.index
+    ]
+
+    plt.figure(figsize=(14, 9))
+    sns.scatterplot(
+        x=embedding[:, 0],
+        y=embedding[:, 1],
+        hue=lineages,
+        palette="husl",
+        s=8,
+        alpha=0.7
+    )
+
+    rng = np.random.default_rng(42)
+    for lineage in set(lineages):
+        indices = np.where(np.array(lineages) == lineage)[0]
+        selected = rng.choice(indices, size=min(2, len(indices)), replace=False)
+
+        for i in selected:
+            plt.annotate(
+                lineage[:3],
+                (embedding[i, 0], embedding[i, 1]),
+                fontsize=8,
+                fontweight="bold",
+                xytext=(4, 4),
+                textcoords="offset points"
+            )
+
+    plt.legend(
+        title="Lineage",
+        bbox_to_anchor=(0.5, -0.15),
+        loc="upper center",
+        ncol=5,
+        fontsize=8,
+        markerscale=2
+    )
+    plt.tight_layout()
+    plt.xlabel("UMAP 1")
+    plt.ylabel("UMAP 2")
+    plt.title("UMAP of cell-line spearman similarity")
+    plt.savefig(output_dir / f"spearman_umap_30.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+def umap_scatter_plot_cosine(pca_cosine: pd.DataFrame, output_dir: Path, model_to_lineage: dict[str, str]) -> None:
+    cosine_distance = np.clip(1 - pca_cosine.to_numpy(), 0, 2)
+    np.fill_diagonal(cosine_distance, 0)
+
+    reducer = umap.UMAP(
+        metric="precomputed",
+        n_neighbors=30,
+        min_dist=0.1,
+        random_state=42
+    )
+    embedding = reducer.fit_transform(cosine_distance)
+    lineages = [
+        model_to_lineage.get(mid, "Unknown")
+        for mid in pca_cosine.index
+    ]
+
+    plt.figure(figsize=(14, 9))
+    sns.scatterplot(
+        x=embedding[:, 0],
+        y=embedding[:, 1],
+        hue=lineages,
+        palette="husl",
+        s=8,
+        alpha=0.7
+    )
+
+    rng = np.random.default_rng(42)
+
+    for lineage in set(lineages):
+        indices = np.where(np.array(lineages) == lineage)[0]
+        selected = rng.choice(indices, size=min(2, len(indices)), replace=False)
+
+        for i in selected:
+            plt.annotate(
+                lineage[:3],
+                (embedding[i, 0], embedding[i, 1]),
+                fontsize=8,
+                fontweight="bold",
+                xytext=(4, 4),
+                textcoords="offset points"
+            )
+
+    plt.legend(
+        title="Lineage",
+        bbox_to_anchor=(0.5, -0.15),
+        loc="upper center",
+        ncol=5,
+        fontsize=8,
+        markerscale=2
+    )
+    plt.tight_layout()
+    plt.xlabel("UMAP 1")
+    plt.ylabel("UMAP 2")
+    plt.title("UMAP of cell-line PCA cosine similarity")
+    plt.savefig(output_dir / f"pca_umap_30.png", dpi=150, bbox_inches="tight")
+    plt.close()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -71,19 +186,21 @@ def main():
     # read all csv
     spearman_csv = pd.read_csv(args.spearman_results, index_col="ModelID")
     pca_cosine_results = pd.read_csv(args.pca_cosine_results, index_col="ModelID")
-    metadata = pd.read_csv(args.metadata)
-
+    lineage_metadata = pd.read_csv(args.metadata)
 
     # clustermap_spearman_correlation(spearman_csv, output_dir)
     # scatter_pca(pca_results, output_dir)
     # clustermap_pca_cosine_clustermap(pca_cosine_results, output_dir)
 
-    # REAL WORK
+    # Evaluate Lineage Agreements
     model_to_lineage: dict[str, str] = (
-        metadata.set_index("ModelID")["OncotreeLineage"]
+        lineage_metadata.set_index("ModelID")["OncotreeLineage"]
         .fillna("Unknown")
         .to_dict()
     )
+
+    umap_scatter_plot_cosine(pca_cosine_results, output_dir, model_to_lineage)
+    umap_scatter_plot_spearman(spearman_csv, output_dir, model_to_lineage)
     # what is random lineage 
     lineages = pd.Series(model_to_lineage)
     lineages = lineages[lineages != "Unknown"]

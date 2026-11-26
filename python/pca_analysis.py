@@ -11,15 +11,17 @@ def principal_component_analysis(
     """
     Perform PCA on the gene expression data and plot the first two principal components.
     """
+
     # Tested with 50, 200, and 500 components.
     # more components led to better clustering of cell lines by lineage
     # cumulative explained variance showed diminishing returns, 500 was retained to balance with
     # computational efficiency
+    # 42 is a fixed seed for a randomized svd, ensuring reproducability. Full was considered but deferring for performance reasons.
     pca = PCA(n_components=500, svd_solver="randomized", random_state=42)
-    scores = pca.fit_transform(gene_expression_by_cell_lines.to_numpy(dtype=pd.Float32Dtype))
+    x = gene_expression_by_cell_lines.to_numpy(dtype=np.float64)
+    scores = pca.fit_transform(x)
+    similarity: np.ndarray = cosine_similarity(scores).astype(np.float32)
 
-    # Compute cosine similarity between cell lines based on PCA embeddings
-    similarity: np.ndarray = cosine_similarity(scores)
     pd.DataFrame(
         similarity,
         index=gene_expression_by_cell_lines.index,
@@ -35,7 +37,8 @@ def main():
     # read the cleaned gene expression data and metadata
     gene_expression_by_cell_lines = pd.read_csv(args.processed_expression_input, index_col="ModelID")
 
-    #vp.plot_gene_variance(gene_expression_by_cell_lines, args)
+    # FOR LATER DEVELOPMENT PURPOSES:
+    #   vp.plot_gene_variance(gene_expression_by_cell_lines, args)
     principal_component_analysis(gene_expression_by_cell_lines, args)
 
 if __name__ == "__main__":

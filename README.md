@@ -59,22 +59,16 @@ flowchart TB
 ##	Step-by-step instructions for running the pipeline, including the installation guide for core dependencies
 Install Prerequisites
 1. [[Java 17 or later](https://docs.oracle.com/en/java/javase/27/install/overview-jdk-installation.html)] — required to run Nextflow
-2. Nextflow — workflow execution engine
+2. [[Nextflow](https://docs.seqera.io/nextflow/install)]— workflow execution engine
 3. [[Docker Desktop](https://www.docker.com/)] — runs the pipeline's containerized Python scripts
 
 Run Pipeline
 1. Clone the repository:
-    - git clone UBC-BIOF501-Nextflow
-    - cd UBC-BIOF501-Nextflow
-2. Start Docker Desktop
+    - ```git clone UBC-BIOF501-Nextflow```
+    - ```cd UBC-BIOF501-Nextflow```
+2. Start Docker Desktop - [[Docker Guide](https://docs.docker.com/go/guides/)]
 3. Run nextflow .nf
-    - nextflow run expression-similarity.nf 
-
-### Run-Only Mode
-The only dependencies for this project are nextflow and docker.
-1. Install nextflow via - 
-2. Install docker via - 
-nextflow run expression-similarity.nf
+    - ```nextflow run expression-similarity.nf```
 
 ### Developer Mode
 Rebuild docker with command 

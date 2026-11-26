@@ -10,14 +10,12 @@ process PreprocessExpression {
 
     output:
     path "processed_expression_protein_coding_genes.csv", emit: data
-    path "figures", emit: figures
 
     script:
     """
     python3 ${python_script} \
         --expression_input ${expression_csv_input} \
-        --expression_output processed_expression_protein_coding_genes.csv \
-        --figures figures
+        --expression_output processed_expression_protein_coding_genes.csv 
     """
 }
 
