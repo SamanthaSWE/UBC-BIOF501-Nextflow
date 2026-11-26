@@ -75,3 +75,9 @@ ow workflow definition and config, dockerfile, python requirements, and README.m
 **/python/** contains all python scripts 
 **/results/** store all intermediate and final results
 **/expected-results/** store expected outputs. NOTE: UPAM point LABELING is random, for more dispersed lineages it is expected there is a different label of points. The UMAP points are reproducible and will NOT vary.
+
+## AI Usage
+AI was used in 3 ways:
+1. Alternative and in addition to google searching for general questions about statistical methods, and approach recommendations
+2. Request for specific visualization code (highly repeatable and library-specific) to accelerate development
+3. Debugging assistance - "i have a bug here: 'code snippet'"
