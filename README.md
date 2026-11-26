@@ -19,22 +19,29 @@ OmicsExpressionTPMLogp1HumanProteinCodingGenes.csv describes the expression of 1
 
 As stated in the project background, this dataset is very suitable as many of these cell lines have been used in experiments including drug sensitivity screens, CRISPR knockout, and RNAi knockdown studies. The insights of these studies can be made relevant to a patient's tumor sample through similarity analysis.
 
-##	Rationale for the pipeline’s design
-TODO: with each step and main tool explained and justified
 ##	A Directed Acyclic Graph (DAG) and summary of the pipeline stages
 from the root github directory, run:
 - ```open pipeline_dag.html```
 Preprocess expression: inputs only the original /Users/samanthaoxley/Git/UBC-BIOF501-Nextflow/data/OmicsExpressionTPMLogp1HumanProteinCodingGenes.csv. Filters to 1-row per cell-line, dropped metadata, exclude incomplete genes.
 
 Parallel Analysis processes: Principal Component Analysis (PCA)/Cosine Similarity and Spearman Correlation
-PCA: Calculate 500 PCA components from expression profiles AND cosine similarity
-Spearman: Input the Human Protein Atlas
+PCA: Calculate 500 PCA components from all gene expression profiles and generate cosine similarity
+Spearman: Input the Human Protein Atlas to filter genes to only known lineage-drivers, calc spearman correlation
+Similarity Evaluation: visualization hub - generate UMAP for both pca cosine and spearman, also compare lineage agreement between them, and check unknown lineage for agreement
 
-
-
+##	Rationale for the pipeline’s design
+- Isolation of input processing allows for customization of filtering, and easily swapping input data. 
+    - For example, remove depmap and insert other RNA expression dataset of choice. Can easily update the python code.
+- Parallelization of PCA Cosine and Spearman Correlation: 
+    - Can plug-and-play new analysis methods easily, the runtime only goes up as the longest analysis type (in this case: spearman)
+- Final Visualization: 
+    - lots of different visualization options can be included. 
+    - This is the only place lineage mapping is included, as to not impact the similarity calculations.
 
 ##	An overview of core and pipeline dependencies
-Nextflow - manages each process into a specific workflow where outputs from one process can pass easily to the next process
+- Nextflow - manages each process into a specific workflow where outputs from one process can pass easily to the next process
+- Docker - allows for python requirements to be installed within its own micro environment, and execution happens within environment as well
+    - Python 3.13 image version, + custom requirements pinned to version for reproducibility
 
 ##	Step-by-step instructions for running the pipeline, including the installation guide for core dependencies
 Install Prerequisites
@@ -42,13 +49,17 @@ Install Prerequisites
 2. [[Nextflow](https://docs.seqera.io/nextflow/install)]— workflow execution engine
 3. [[Docker Desktop](https://www.docker.com/)] — runs the pipeline's containerized Python scripts
 
-Run Pipeline
+Run Pipeline:
 1. Clone the repository:
     - ```git clone UBC-BIOF501-Nextflow```
     - ```cd UBC-BIOF501-Nextflow```
 2. Start Docker Desktop - [[Docker Guide](https://docs.docker.com/go/guides/)]
 3. Run nextflow .nf
     - ```nextflow run expression-similarity.nf```
+
+Compare Expected Results:
+    - compare 4 outputs in /results/final_similarity/figures with /expected_results
+    - NOTE: UPAM point LABELING is random and NOT EXPECTED to perfectly match, included for visual interpretation. The UMAP POINTS are reproducible and will NOT vary.
 
 ### Developer Mode
 Rebuild docker with command 
@@ -58,14 +69,9 @@ Ensure depmap-dev docker build
 nextflow run expression-similarity.nf -with-timeline timeline.html
 
 ##	An overview of the directory structure
-Root Directory (UBC-BIOF501-Nextflow) contains nextfl\
+**Root Directory** (UBC-BIOF501-Nextflow) contains nextfl\
 ow workflow definition and config, dockerfile, python requirements, and README.md
-/data/ contains pre-requisite data (larger files pulled from git)
-/python/ contains all python scripts 
-/results/ store all intermediate and final results, including:
-    - 
-
-# TODO!!
-- replace docker file with image pointing to git
-- check timeline
-- create DAG
+**/data/** contains pre-requisite data (larger files pulled from git)
+**/python/** contains all python scripts 
+**/results/** store all intermediate and final results
+**/expected-results/** store expected outputs. NOTE: UPAM point LABELING is random, for more dispersed lineages it is expected there is a different label of points. The UMAP points are reproducible and will NOT vary.
