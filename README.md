@@ -22,39 +22,19 @@ As stated in the project background, this dataset is very suitable as many of th
 ##	Rationale for the pipeline’s design
 TODO: with each step and main tool explained and justified
 ##	A Directed Acyclic Graph (DAG) and summary of the pipeline stages
-flowchart TB
-    subgraph " "
-    v0["channel.fromPath"]
-    v1["channel.fromPath"]
-    v2["channel.fromPath"]
-    v3["python_script"]
-    v6["python_script"]
-    v8["python_script"]
-    v10["python_script"]
-    end
-    v4(["PreprocessExpression"])
-    subgraph " "
-    v5[" "]
-    v12[" "]
-    end
-    v7(["PCAAnalysis"])
-    v9(["SpearmanAnalysis"])
-    v11(["SimilarityEvaluation"])
-    v0 --> v4
-    v1 --> v9
-    v2 --> v11
-    v3 --> v4
-    v4 --> v7
-    v4 --> v5
-    v4 --> v9
-    v6 --> v7
-    v7 --> v11
-    v8 --> v9
-    v9 --> v11
-    v10 --> v11
-    v11 --> v12
+from the root github directory, run:
+- ```open pipeline_dag.html```
+Preprocess expression: inputs only the original /Users/samanthaoxley/Git/UBC-BIOF501-Nextflow/data/OmicsExpressionTPMLogp1HumanProteinCodingGenes.csv. Filters to 1-row per cell-line, dropped metadata, exclude incomplete genes.
 
-##	An overview of core (e.g. Nextflow, conda) and pipeline dependencies (e.g. FastQC, STAR, DESeq2)
+Parallel Analysis processes: Principal Component Analysis (PCA)/Cosine Similarity and Spearman Correlation
+PCA: Calculate 500 PCA components from expression profiles AND cosine similarity
+Spearman: Input the Human Protein Atlas
+
+
+
+
+##	An overview of core and pipeline dependencies
+Nextflow - manages each process into a specific workflow where outputs from one process can pass easily to the next process
 
 ##	Step-by-step instructions for running the pipeline, including the installation guide for core dependencies
 Install Prerequisites

@@ -199,15 +199,14 @@ def main():
         .to_dict()
     )
 
+    # Generate UMAPS for both for visualization of clusters
     umap_scatter_plot_cosine(pca_cosine_results, output_dir, model_to_lineage)
     umap_scatter_plot_spearman(spearman_csv, output_dir, model_to_lineage)
-    # what is random lineage 
-    lineages = pd.Series(model_to_lineage)
-    lineages = lineages[lineages != "Unknown"]
 
-    counts = lineages.value_counts()
-    n = counts.sum()
-    random_baseline = (counts * (counts - 1)).sum() / (n * (n - 1))
+    # generate lineage agreemeents between methods
+    known_series = pd.Series(model_to_lineage)
+    known_series = known_series[known_series != "Unknown"]
+    counts = known_series.value_counts()
 
     similarity_methods = {
         "Spearman": spearman_csv,
@@ -218,35 +217,41 @@ def main():
         mid for mid, lineage in model_to_lineage.items()
         if lineage == "Unknown"
     }
-    similarity_analysis = {}
-    records = []
 
+    per_lineage_rows: list[pd.DataFrame] = []
+    records: list[dict[str, str]] = []
+
+    # UPDATE THIS TO METHOD FOR FUTURE USE...
     for method, data in similarity_methods.items():
         # Keep only cell lines with known lineage, in matching row/column order
         known_ids = [
             mid for mid in data.index
             if mid not in unknown_ids
         ]
-        scores = data.loc[known_ids, known_ids].to_numpy()
+        scores = data.loc[known_ids, known_ids].to_numpy(copy=True)
         lineages = np.array([model_to_lineage[i] for i in known_ids])
 
         # Exclude self-comparisons
-        np.fill_diagonal(
-            scores,
-            -np.inf
-        )
+        np.fill_diagonal(scores, -np.inf)
         # Find top 10 neighbors without sorting the entire matrix
         neighbors = np.argpartition(scores, -10, axis=1)[:, -10:]
-        agreement = (lineages[neighbors] == lineages[:, None]).mean()
-        similarity_analysis[method] = agreement
-
+        cell_line_agreement = (
+            lineages[neighbors] == lineages[:, None]
+        ).mean(axis=1)
+        
+        lineage_agreement_method = pd.DataFrame({
+            "Lineage": lineages,
+            "Agreement": cell_line_agreement,
+            "Method": method,
+        })
+        per_lineage_rows.append(
+            lineage_agreement_method.groupby(["Lineage", "Method"], as_index=False)["Agreement"].mean()
+        )
 
         for mid in unknown_ids:
             if mid not in data.index:
                 continue
-
             neighbors = data.loc[mid, known_ids].nlargest(10)
-
             for neighbor in neighbors.index:
                 records.append({
                     "ModelID": mid,
@@ -254,23 +259,39 @@ def main():
                     "Lineage": model_to_lineage[neighbor]
                 })
 
-    plt.figure(figsize=(8, 5))
-    plt.bar(similarity_analysis.keys(), similarity_analysis.values())
-    plt.ylabel("Top-10 lineage agreement")
-    plt.title("Similarity method performance by lineage")
-    plt.ylim(0, 1)
-    plt.xticks(rotation=20)
-    plt.axhline(
-        y=random_baseline,
-        color="red",
-        linestyle="--",
-        label=f"Random baseline ({random_baseline:.1%})"
+    lineage_agreement_methods = pd.concat(per_lineage_rows, ignore_index=True)
+    lineage_order = (
+        lineage_agreement_methods.groupby("Lineage")["Agreement"]
+        .mean()
+        .sort_values(ascending=False)
+        .index
     )
-    plt.legend()
+
+    plt.figure(figsize=(10, max(6, len(lineage_order) * 0.35)))
+    ax = sns.barplot(
+        data=lineage_agreement_methods,
+        y="Lineage",
+        x="Agreement",
+        hue="Method",
+        order=lineage_order,
+    )
+    # Add number of cell lines per lineage
+    ax.set_yticks(
+        range(len(lineage_order)),
+        labels=[f"{lineage} (n={counts[lineage]})" for lineage in lineage_order]
+    )
+
+    plt.xlabel("Top-10 Lineage Agreement")
+    plt.ylabel("Lineage")
+    plt.title("Top-10 Lineage Agreement by Tissue Type: Spearman vs. PCA Cosine")
+    plt.xlim(0, 1)
+    plt.legend(loc="lower right")
     plt.tight_layout()
-    plt.savefig(output_dir / f"method_lineage_agreement.png", dpi=150)
+    plt.savefig(output_dir / "method_lineage_agreement_by_lineage.png", dpi=150)
     plt.close()
 
+
+    # unknown lineage preductions between spearman and cosine
     counts = (
         pd.DataFrame(records)
         .groupby(["ModelID", "Method", "Lineage"])
