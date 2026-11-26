@@ -51,7 +51,7 @@ Install Prerequisites
 
 Run Pipeline:
 1. Clone the repository:
-    - ```git clone UBC-BIOF501-Nextflow```
+    - ```git clone https://github.com/SamanthaSWE/UBC-BIOF501-Nextflow.git```
     - ```cd UBC-BIOF501-Nextflow```
 2. Start Docker Desktop - [[Docker Guide](https://docs.docker.com/go/guides/)]
 3. Run nextflow .nf
